@@ -9,13 +9,13 @@ library("permute")
 #             input parameters
 ##############################################
 
-setwd("/path/to/find_hotspot/dir")
+#setwd("/path/to/find_hotspot/dir")
 
 #for control
-path_data_for_bin = "input_example/_merged_0h_Arc_Nr4a1_.csv"
+path_data_control = "input_example/_merged_0h_Arc_Nr4a1_.csv"
 
 #for treatment
-path_data_for_analysis = "input_example/_merged_1h_Arc_Nr4a1_.csv"
+path_data_treat = "input_example/_merged_1h_Arc_Nr4a1_.csv"
 
 list_genes = c("Arc","Nr4a1","Egr2")
 
@@ -208,6 +208,7 @@ get_data_one_gene = function(data1,data_for_cutoff,current_gene, cond){
   print(cond)
   print(current_gene)
   
+  
   # get cutoff level of the current gene
   gene_col = grep(current_gene,names(data_for_cutoff))
   bin = make_bin(data_for_cutoff,gene_col)
@@ -215,6 +216,7 @@ get_data_one_gene = function(data1,data_for_cutoff,current_gene, cond){
   
   gene_col = grep(current_gene,names(data1))
   all_data_current_gene = find_hotspot_all_rep(data1,gene_col, gene_cutoff, level_cutoff = 9)
+  
   
   gene1_poly= all_data_current_gene[[2]]
   gene1_poly$gene = current_gene
@@ -239,8 +241,22 @@ suf_data = function(data, list_genes){
   return(data)
 }
 
+plot_data = function(data_trea,data_con){
+  data_treat$condition = "treat"
+  data_con$condition = "con"
+  data_to_plot = rbind(data_con,data_treat)
+  data_to_plot = rotate_data(data_to_plot)
+  p = ggplot(data_to_plot, aes(x=center_x, y = center_y)) +
+    geom_point() + facet_grid(cols = vars(condition), rows = vars(rep_num)) +
+    theme_bw(base_size = 20)
+  plot(p)
+}
+
 run_analysis = function(all_data, data_for_bin, output_file) {
   pdf(output_file)
+  
+  # view of the data
+  plot_data(all_data, data_for_bin)
   
   polygons = list()
   in_out_expression = list()
@@ -305,29 +321,31 @@ run_analysis = function(all_data, data_for_bin, output_file) {
 }
 
 
+
 ##############################################
 #             analysis
 ##############################################
 
 
 # data of the treatment condition
-all_data = read.csv(path_data_for_analysis)
+data_treat = read.csv(path_data_treat)
 
 
 # data of control condition
-data_for_bin = read.csv(path_data_for_bin)
+data_con = read.csv(path_data_control)
+
 
 
 # run analysis to find hotspots in data
-run_analysis(all_data, data_for_bin, output_file_name)
+run_analysis(data_treat, data_con, output_file_name)
 
 # run analysis on shuffled data
 if (shuffle_data == TRUE){
-  all_data = suf_data(all_data, list_genes)
-  data_for_bin = suf_data(data_for_bin, list_genes)
+  data_treat = suf_data(data_treat, list_genes)
+  data_con = suf_data(data_con, list_genes)
 }
 
-run_analysis(all_data, data_for_bin, shuffle_file_name)
+run_analysis(data_treat, data_con, shuffle_file_name)
 
 
 
